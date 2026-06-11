@@ -1,0 +1,16 @@
+# Virtual environment
+.venv/
+venv/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+
+# Putest
+.pytest_cache/
