@@ -17,3 +17,6 @@ __pycache__/
 
 # Data Base
 tiktok.db
+
+#video
+video/
