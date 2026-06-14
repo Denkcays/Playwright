@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 from dotenv import load_dotenv
 from random import randint
 from os import getenv
-import sqlite3 as sq
+import aiosqlite as sq
 import asyncio
 
 load_dotenv()
@@ -71,39 +71,64 @@ async def main():
             await fix(captcha, page)
 
             await first_video.click()
-            await page.wait_for_timeout(randint(1900, 2100))
+            await page.wait_for_timeout(3000)
             links.append(page.url)
 
             await fix(captcha, page)
 
             #links.add(page.url)
             await page.locator(selector = "[data-e2e='browse-close']").click()
-            await page.wait_for_timeout(randint(1700, 2500))
+            await page.wait_for_timeout(3000)
 
             await fix(captcha, page)
 
             await first_video.evaluate("el => el.remove()")
-            await page.wait_for_timeout(randint(1500, 2400))
+            await page.wait_for_timeout(3000)
 
-        print(f"{name}\n{message}\n{links}\n{name_video}")
+        links_no_photo = []
+        name_no_photo = []
+
+        for link, name_vid in zip(links, name_video):
+            if not "photo" in link:
+                links_no_photo.append(link)
+                name_no_photo.append(name_vid)
+
+        #print(f"{name}\n{message}\n{links_no_photo}\n{name_no_photo}\n{len(links_no_photo)}\n{len(name_no_photo)}")
 
         await context.close()
 
-        # with sq.connect("tiktok.db") as con:
-        #     cur = con.cursor()
-        #     cur.execute("""CREATE TABLE IF NOT EXISTS tiktok  
-        #             (
-        #                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-        #                 name TEXT,
-        #                 message TEXT,
-        #                 chat_id TEXT,
-        #                 UNIQUE(name, message)
-        #             ) 
-        #     """)
+        async with sq.connect("tiktok.db") as con:
+            cur = await con.cursor()
+            # await cur.execute("""DROP TABLE tiktok_messages""")
+            # await cur.execute("""DROP TABLE tiktok_videos""")
+            await cur.execute("""CREATE TABLE IF NOT EXISTS tiktok_messages 
+                    (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT,
+                        message TEXT,
+                        chat_id TEXT,
+                        UNIQUE(name, message)
+                    ) 
+            """)
 
-        #     for n, m in zip(name, message):
-        #         cur.execute("INSERT OR IGNORE INTO tiktok (name, message, chat_id) VALUES (?, ?, ?)", (n, m, tiktokuser))
+            await cur.execute("""CREATE TABLE IF NOT EXISTS tiktok_videos
+                    (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        video TEXT,
+                        name_video TEXT,
+                        chat_id TEXT,
+                        UNIQUE(video, name_video)
+                    ) 
+            """)
+
+            for n, m in zip(name, message):
+                await cur.execute("INSERT OR IGNORE INTO tiktok_messages (name, message, chat_id) VALUES (?, ?, ?)", (n, m, tiktokuser))
+
+            for v, nv in zip(links_no_photo, name_no_photo):
+                await cur.execute("INSERT OR IGNORE INTO tiktok_videos (video, name_video, chat_id) VALUES (?, ?, ?)", (v, nv, tiktokuser))
         
+            await con.commit()
+
         # page.click("[data-e2e='dm-new-input-editor']")
         # page.type(selector = "[data-e2e='dm-new-input-editor']", text = "Это сообщение отправленно кодом на python", delay = 100)
         # page.press("[data-e2e='dm-new-input-editor']", "Enter")
