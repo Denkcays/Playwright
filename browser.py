@@ -9,7 +9,7 @@ async def fix(captcha, page):
     if await captcha.is_visible():
         await page.locator("#captcha_close_button").click() #Sometimes it can be break
 
-async def work_browser(BROWSER_PROFILE_PATH, BROWSER_EXECUTABLE, tiktokuser):
+async def work_browser(BROWSER_PROFILE_PATH: str, BROWSER_EXECUTABLE: str, tiktokuser: str):
     async with async_playwright() as browser:
         context = await browser.chromium.launch_persistent_context(
             user_data_dir=BROWSER_PROFILE_PATH,

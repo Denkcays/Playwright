@@ -1,6 +1,6 @@
 import aiosqlite as sq
 
-async def data_base(name, message, links_no_photo, name_no_photo, tiktokuser): 
+async def data_base(name: list, message: list, links_no_photo: list, name_no_photo: list, tiktokuser: str): 
     async with sq.connect("tiktok.db") as con:
         cur = await con.cursor()
         # await cur.execute("""DROP TABLE tiktok_messages""")

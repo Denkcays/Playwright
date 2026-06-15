@@ -15,6 +15,3 @@ async def downloader(url: str, browser: str, directory: str):
 
 async def main_download(url: str, browser: str, directory: str):
     await downloader(url, browser, directory)
-
-if __name__ == "__main__":
-    asyncio.run(main_download())
