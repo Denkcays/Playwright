@@ -21,16 +21,16 @@ async def show_messages(message: Message, state: FSMContext):
 
 @router.message(tiktok.username ,F.text)
 async def verification(message: Message, state: FSMContext):
-    tiktokuser = message.text.split()
+    tiktokuser = message.text
     async with sq.connect("tiktok.db") as con:
         cur = await con.cursor()
-        await cur.execute("""SELECT chat_id FROM tiktok_messages WHERE chat_id = ?""", (tiktokuser))
+        await cur.execute("""SELECT chat_id FROM tiktok_messages WHERE chat_id = ?""", (tiktokuser,))
         ver = await cur.fetchone()
 
     if ver is not None:
-        message.answer("This user is in db")
+        await message.answer("This user is in db")
     else:
-        message.answer("This user isn't in db")
+        await message.answer("This user isn't in db")
 
 
 @router.message(Command("show_video"))
