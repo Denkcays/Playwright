@@ -20,7 +20,7 @@ async def show_messages(message: Message, state: FSMContext):
     await state.set_state(tiktok.username)
 
 @router.message(tiktok.username ,F.text)
-async def verification(message: Message, state: FSMContext):
+async def verification(message: Message):
     tiktokuser = message.text
     async with sq.connect("tiktok.db") as con:
         cur = await con.cursor()
@@ -35,7 +35,9 @@ async def verification(message: Message, state: FSMContext):
             for item in messages:
                 some = list(item)
                 del item
-                some_text += "\n" + some[0] + ": " + some[1]
+                name = some[0]
+                some_text += "\n" + name[1: -1] + ": " + some[1]
+                del name
                 del some
 
             await message.answer(some_text)
