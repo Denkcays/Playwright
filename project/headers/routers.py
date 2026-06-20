@@ -1,14 +1,16 @@
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import Message, FSInputFile
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
-from aiogram.types import Message
-from aiogram import Router, F
+from aiogram import Router
+from pathlib import Path
 import aiosqlite as sq
 
 router = Router()
 
 class tiktok(StatesGroup):
-    username = State()
+    message_username = State()
+    video_username = State()
 
 @router.message(Command("start"))
 async def start(message: Message):
@@ -17,10 +19,10 @@ async def start(message: Message):
 @router.message(Command("show_messages"))
 async def show_messages(message: Message, state: FSMContext):
     await message.answer("Please, send a tiktok username")
-    await state.set_state(tiktok.username)
+    await state.set_state(tiktok.message_username)
 
-@router.message(tiktok.username ,F.text)
-async def verification(message: Message):
+@router.message(tiktok.message_username)
+async def verification_message(message: Message, state: FSMContext):
     tiktokuser = message.text
     async with sq.connect("tiktok.db") as con:
         cur = await con.cursor()
@@ -30,13 +32,19 @@ async def verification(message: Message):
         if ver is not None:
             await cur.execute("""SELECT name, message FROM tiktok_messages WHERE chat_id = ?""", (tiktokuser,))            
             messages = await cur.fetchall()
+
+            del cur
+            del ver
+            del con
+            del tiktokuser
+
             some_text = ""
             
             for item in messages:
                 some = list(item)
                 del item
                 name = some[0]
-                some_text += "\n" + name[1: -1] + ": " + some[1]
+                some_text += "\n" + name[1:] + ": " + some[1]
                 del name
                 del some
 
@@ -44,6 +52,44 @@ async def verification(message: Message):
         else:
             await message.answer("This user isn't in db")
 
+    await state.clear()
+
+
 @router.message(Command("show_video"))
-async def show_video(message: Message):
-    pass
+async def show_video(message: Message, state):
+    await message.answer("Please, send a tiktok username")
+    await state.set_state(tiktok.video_username)
+
+@router.message(tiktok.video_username)
+async def verification_video(message: Message, state: State):
+    tiktokuser = message.text
+    async with sq.connect("tiktok.db") as con:
+        cur = await con.cursor()
+        await cur.execute("""SELECT chat_id FROM tiktok_videos WHERE chat_id = ?""", (tiktokuser,))
+        ver = await cur.fetchone()
+
+        if ver is not None:
+            await cur.execute("""SELECT name_video FROM tiktok_videos WHERE chat_id = ?""", (tiktokuser,))
+            names = await cur.fetchall()
+            await cur.execute("""SELECT video FROM tiktok_videos WHERE chat_id = ?""", (tiktokuser,))
+            videos_url = await cur.fetchall()
+
+            video = videos_url[0][0]
+            video_num = video.split("/")[-1]
+
+            video_dir = Path("~/Denkcays/Playwright/video/").expanduser()
+            mp4_files = [file.name for file in video_dir.glob("*.mp4")]
+
+            video = None
+
+            for i in mp4_files:
+                if video_num in i:
+                    video = i
+                    break
+
+            fullvideo = video_dir / video
+
+            some = FSInputFile(str(fullvideo))
+            await message.answer_video(some, caption = names[0][0][1:])
+
+    await state.clear()
